@@ -1,16 +1,20 @@
 #!/bin/bash
 
-# setup.sh: Inicializa el entorno de desarrollo local para el proyecto.
-# Crea el entorno virtual si no existe, instala requirements y mueve los hooks con permisos de ejecución.
-
-set -e  # Termina en caso de error
-
 echo "=== INICIANDO SETUP DEL PROYECTO ==="
+
+# Detectar el comando Python válido
+if command -v python &>/dev/null; then
+    PYTHON_CMD=python
+elif command -v python3 &>/dev/null; then
+    PYTHON_CMD=python3
+else
+    echo "[ERROR] No se encontró Python instalado."
+fi
 
 # 1. Creando entorno virtual si no existe
 if [ ! -d "venv" ]; then
-    echo "[INFO] Creando entorno virtual 'venv'..."
-    python -m venv venv
+    echo "[INFO] Creando entorno virtual 'venv'"
+    $PYTHON_CMD -m venv venv
 else
     echo "[INFO] Entorno virtual 'venv' ya existe."
 fi
