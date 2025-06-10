@@ -27,22 +27,23 @@ En este proyecto usamos hooks personalizados para mantener buenas prácticas de 
 
 Este hook se ejecuta antes de que se aplique un commit.
 
-Con este hook, se evita que se comiteen archivos que ya han sido añadidos al area 'staging' pero sin embargo fueron nuevamente modificados.
+Con este hook, se evita que se comiteen archivos en una rama donde no se pueda trabajar (en nuestro caso son las ramas 'main', 'develop' y 'release').
 
 **Comportamiento:**
 
 - Se añade un archivo al área 'staged'.
-- Si dicho archivo no es modificado, entonces al hacer commit no se muestra ninguna advertencia.
-- Si dicho arvhico es modificado, entonces al hacer commit se muestra una advertencia que cancela la acción.
+- Si nos encontramos trabajando en una rama "prohibida", entonces no se realiza el commit cuando querramos hacerlo.
+- Si nos encontramos trabajando en una rama válida, entonces pasará el commit cuando querramos hacerlo.
 
 **Ejemplo:**
 
 ```bash
+# Trabajando en la rama 'develop'
 $ git add archivo
-$ nano archivo  # Se modifica el archivo
 $ git commit -m "mensaje de commit"
 
-"Pre-commit: Hay archivos en 'staged' que fueron modificados. Por favor, vuelva a agregarlos."
+"ERROR: No está permitido hacer commit directamente en la rama 'develop'."
+"Por favor, cree una rama de trabajo para hacer tus commits."
 ```
 
 ### 2. `commit-msg`
