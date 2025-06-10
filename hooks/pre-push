@@ -1,11 +1,59 @@
 #!/bin/bash
 
-# Hook pre-push: ejecuta pruebas automáticas antes de realizar el push.
+echo "[pre-push] Ejecutando linters y validaciones completas..."
 
-echo "Ejecutando pruebas automáticas..."
+# 1. Linting Python completo (flake8)
+flake8 .
+if [[ $? -ne 0 ]]; then
+  echo "[pre-push] Error: flake8 encontró problemas."
+  exit 1
+fi
 
-# Aquí se planea agregar: pytest, terraform validate, shellcheck, etc.
-# Por ahora solo simula éxito (retorna 0).
-# Se  por tus pruebas reales cuando las tengas listas.
+# 2. Shellcheck a todos los scripts bash
+SH_FILES=$(find . -type f -name "*.sh" -not -path "./venv/*")
+for sh in $SH_FILES; do
+  shellcheck "$sh"
+  if [[ $? -ne 0 ]]; then
+    echo "[pre-push] Error: shellcheck encontró problemas en $sh."
+    exit 1
+  fi
+done
 
+# 3. Terraform: tflint, fmt y validate en todas las carpetas con archivos .tf
+TF_DIRS=$(find . -name "*.tf" | xargs -I{} dirname {} | sort -u | uniq)
+for dir in $TF_DIRS; do
+  if [ -d "$dir" ]; then
+    echo "[pre-push] Analizando Terraform en $dir"
+
+    # Ejecutar tflint ignorando las reglas de versionado que quieres dejar para después
+    tflint --config=.tflint.hcl --chdir="$dir"
+    if [[ $? -ne 0 ]]; then
+      echo "[pre-push] Error: tflint encontró problemas en $dir."
+      exit 1
+    fi
+
+    terraform -chdir="$dir" fmt -check
+    if [[ $? -ne 0 ]]; then
+      echo "[pre-push] Error: terraform fmt falló en $dir."
+      exit 1
+    fi
+
+    terraform -chdir="$dir" validate
+    if [[ $? -ne 0 ]]; then
+      echo "[pre-push] Error: terraform validate falló en $dir."
+      exit 1
+    fi
+  fi
+done
+
+# 4. Pruebas automáticas (pytest)
+if command -v pytest &>/dev/null; then
+  pytest
+  if [[ $? -ne 0 ]]; then
+    echo "[pre-push] Error: pytest falló."
+    exit 1
+  fi
+fi
+
+echo "[pre-push] Todos los linters y pruebas pasaron."
 exit 0
