@@ -45,10 +45,11 @@ if [[ -n "$SH_FILES" ]]; then
   done
 fi
 
-# TFLint solo sintaxis
+# TFLint solo sintaxis, usando configuracion .tflint.hcl
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 for dir in $TF_DIRS; do
   if [ -d "$dir" ]; then
-    tflint --chdir="$dir" --disable-rule=terraform_unused_declarations
+    tflint --config="$REPO_ROOT/.tflint.hcl" --chdir="$dir"
     if [[ $? -ne 0 ]]; then
       echo "[pre-commit] Error: tflint encontró problemas en $dir."
       exit 1

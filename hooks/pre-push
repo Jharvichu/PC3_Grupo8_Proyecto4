@@ -21,12 +21,20 @@ done
 
 # 3. Terraform: tflint, fmt y validate en todas las carpetas con archivos .tf
 TF_DIRS=$(find . -name "*.tf" | xargs -I{} dirname {} | sort -u | uniq)
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 for dir in $TF_DIRS; do
   if [ -d "$dir" ]; then
     echo "[pre-push] Analizando Terraform en $dir"
 
+    # Inicializa terraform (sin backend para que no haga lock remotos ni pida credenciales)
+    terraform -chdir="$dir" init -backend=false -input=false -upgrade=false > /dev/null
+    if [[ $? -ne 0 ]]; then
+      echo "[pre-push] Error: terraform init falló en $dir."
+      exit 1
+    fi
+
     # Ejecutar tflint ignorando las reglas de versionado que quieres dejar para después
-    tflint --config=.tflint.hcl --chdir="$dir"
+    tflint --config="$REPO_ROOT/.tflint.hcl" --chdir="$dir"
     if [[ $? -ne 0 ]]; then
       echo "[pre-push] Error: tflint encontró problemas en $dir."
       exit 1
@@ -49,8 +57,13 @@ done
 # 4. Pruebas automáticas (pytest)
 if command -v pytest &>/dev/null; then
   pytest
-  if [[ $? -ne 0 ]]; then
-    echo "[pre-push] Error: pytest falló."
+  PYTEST_EXIT_CODE=$?
+  if [[ $PYTEST_EXIT_CODE -eq 1 ]]; then
+    echo "[pre-push] Error: pytest falló en al menos un test."
+    exit 1
+  elif [[ $PYTEST_EXIT_CODE -ne 0 && $PYTEST_EXIT_CODE -ne 5 ]]; then
+    # 5 es "No tests collected"
+    echo "[pre-push] Error: pytest terminó con código $PYTEST_EXIT_CODE."
     exit 1
   fi
 fi
