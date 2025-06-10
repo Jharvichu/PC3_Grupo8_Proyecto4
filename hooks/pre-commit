@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Obteniendo la rama actual
+branch=$(git symbolic-ref --short HEAD)
+
+# Ramas protegidas donde no se permite hacer commits
+ramas_protegidas=("main" "develop" "release")
+
+# Verificar si la rama actual está en la lista de ramas protegidas
+for rama in "${ramas_protegidas[@]}"; do
+  if [[ "$branch" == "$rama" ]]; then
+    echo "ERROR: No está permitido hacer commit directamente en la rama '$branch'."
+    echo "Por favor, cree una rama de trabajo para hacer tus commits."
+    exit 1
+  fi
+done
+
+# Si pasa
+exit 0
