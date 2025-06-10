@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Hook pre-commit: se previene commits si hay cambios que aún no están en "staged" (archivos sin agregar).
+# Se planea luego agregar linters
+
+if ! git diff --quiet; then
+  echo "Pre-commit: Hay archivos en 'staged' que fueron modificados. Por favor, vuelva a agregarlos."
+  exit 1
+fi
+
+# Si todos están en sección 'staged', entonces se acepta el commit.
+exit 0

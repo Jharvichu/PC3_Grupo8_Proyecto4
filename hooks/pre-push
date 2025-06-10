@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Hook pre-push: ejecuta pruebas automáticas antes de realizar el push.
+
+echo "Ejecutando pruebas automáticas..."
+
+# Aquí se planea agregar: pytest, terraform validate, shellcheck, etc.
+# Por ahora solo simula éxito (retorna 0).
+# Se  por tus pruebas reales cuando las tengas listas.
+
+exit 0
