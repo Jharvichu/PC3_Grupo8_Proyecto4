@@ -25,15 +25,19 @@ En este proyecto usamos hooks personalizados para mantener buenas prácticas de 
 
 ### 1. `pre-commit`
 
-Este hook se ejecuta antes de que se aplique un commit.
+Este hook se ejecuta antes de que se aplique un commit y cumple dos funciones importantes:
 
-Con este hook, se evita que se comiteen archivos en una rama donde no se pueda trabajar (en nuestro caso son las ramas 'main', 'develop' y 'release').
+1. Evitar que se comiteen archivos en una rama donde no se pueda trabajar (en nuestro caso son las ramas 'main', 'develop' y 'release').
+2. Ejecutar linters ágiles de manera automática sobre los archivos en el área de staged, para detectar errores antes de confirmar los cambios.
 
 **Comportamiento:**
 
 - Se añade un archivo al área 'staged'.
 - Si nos encontramos trabajando en una rama "prohibida", entonces no se realiza el commit cuando querramos hacerlo.
-- Si nos encontramos trabajando en una rama válida, entonces pasará el commit cuando querramos hacerlo.
+- Si nos encontramos trabajando en una rama válida, entonces:
+    - Se ejecuta `flake8` sobre los archivos `.py`.
+    - Se ejecuta `shellcheck` sobre scripts `.sh`.
+    - Se ejecuta `tflint` para validar sintaxis en archivos `.tf`.
 
 **Ejemplo:**
 
@@ -45,6 +49,8 @@ $ git commit -m "mensaje de commit"
 "ERROR: No está permitido hacer commit directamente en la rama 'develop'."
 "Por favor, cree una rama de trabajo para hacer tus commits."
 ```
+
+**Verificar que se tiene instaladas estas herramientas localmente. Puede ver cómo instalarlas en la sección `Herramientas usadas y cómo instalarlas`**
 
 ### 2. `commit-msg`
 
@@ -76,18 +82,161 @@ Debe seguir: <tipo>(<scope>): (Issue #<número>) <mensaje de 10-100 caracteres>
 
 Este hook se ejecuta justo antes de enviar los cambios al repositorio remoto usando `git push`.
 
-Con este hook se ejecutan pruebas automáticas antes de subir el código al repositorio. En este estado actual, solo se simula la validación.
+Con este hook se ejecutan validaciones completas del proyecto, incluyendo linters para python, bash, terraform y pruebas si es que hay alguna.
 
 **Comportamiento:**
 
-- Al ejecutar `git push`, se muestra un mensaje que indica que se están ejecutando pruebas automáticas.
-- Por ahora, el hook siempre retorna éxito.
-- En el futuro se planea ejecutar herramientas como pytest, shellcheck, etc.
+- Al ejecutar `git push`, se lanza un pipeline local con:
+    - `flake8`, para validar los códigos python.
+    - `shellcheck` para analizar todos los scripts `.sh`.
+    - `tflint`, `terraform fmt` y `terraform validate` para todas las carpetas con archivos `.tf`.
+    - `pytest`, para ejecutar los tests.
 
 **Ejemplo:**
 
 ```bash
 $ git push origin feature/creando-archivos
 
-Ejecutando pruebas automáticas...
+[pre-push] Ejecutando linters y validaciones completas...
+[pre-push] Analizando Terraform en adapter/
+[pre-push] Todos los linters y pruebas pasaron.
+```
+
+**Verificar que se tiene instaladas estas herramientas localmente. Puede ver cómo instalarlas en la sección `Herramientas usadas y cómo instalarlas`**
+
+## Herramientas usadas y cómo instalarlas
+
+### 1. flake8 y Pytest:
+
+- flake8: Linter para código python, que ayuda a la calidad y estilo del código.
+- pytest: Framework para realizar pruebas unitarias en python.
+
+Ambas herramientas ya están listadas en el archivo `requirements.txt` y que se instalan automáticamente al ejecutar el script `setup.sh`
+
+### 2. ShellCheck
+
+Este es un linter para scripts shell (bash, etc) que detecta errores y malas prácticas.
+
+**Instalación**
+
+Dirigirse a `home/` (`cd ~`)
+
+Ejecutar:
+
+```bash
+sudo apt update
+sudo apt install shellcheck
+```
+
+### 3. TFLint
+
+Es una herramienta para analizar código terraform, para detectar problemas o malas prácticas
+
+**Instalación**
+
+Dirigirse a `home/` (`cd ~`)
+
+Ejecutar:
+
+```bash
+curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+```
+
+### 4. JQ
+
+Es una herramienta para procesar y manipular JSONs desde nuestra línea de comandos.
+
+**Instalación**
+
+Dirigirse a `home/` (`cd ~`)
+
+Ejecutar:
+
+```bash
+sudo apt update
+sudo apt install jq
+```
+
+## Scripts
+
+### 1. `lint_all.sh`
+
+Este script ejecuta todos los linters disponibles en el proyecto para archivos importantes (`.py`, `.tf` y `.tf`). Además, guarda el resultado en el archivo `lint.log` en `logs/`. Inclusive crea la carpeta `logs/` si es que no existe. 
+
+El objetivo de este script es detectar errores comunes y malas prácticas antes de que el código llegue al controlados de versiones. 
+
+Ejecuta:
+
+- `flake8` sobre todos los archivos python del proyecto.
+    - Analiza desde la raiz y sigue por los subdirectorios.
+    - Detecta errores de sintaxis, variables no utilizadas, etc.
+    - Toda la salida se redirigide y guarda en el log.
+- `shellcheck` sobre todos los archivos bash, excluyendo la carpeta del entorno virtual, `venv/`.
+    - Busca scripts `.sh` en el proyecto.
+    - Para cada archivo muestra el nombre del script y el análisis realizado.
+    - Informa malas prácticas, variables sin comillas, etc.
+- `tflint` en cada carpeta que contenga archivos terraform (`.tf`).
+    - Busca todos los archivos `.tf` en todo el proyecto y ejecuta tflint para cada caso.
+    - Detecta problemas como recursos mal definidos, variables sin usar, sintaxis malos, etc.
+
+**Uso:**
+
+```bash
+bash scripts/lint_all.sh
+```
+
+**Verificar que se tiene instaladas estas herramientas localmente. Puede ver cómo instalarlas en la sección `Herramientas usadas y cómo instalarlas`**
+
+### 2. `validate_adapter.sh`
+
+Este script valida la infraestructura en el directorio `adapter/`, usando herramientas nativas de terraform. También, guarda el resultado en el archivo `validate_adapter.log`, dentro de la carpeta `logs/`. Inclusive crea la carpeta `logs/` si es que no existe.
+
+El objetivo es asegurar que los archivos terraform dentro de `adapter/` estén bien formateadas y sean validas sintácticamente.
+
+Ejecuta:
+
+- `terraform fmt -check` para verificar que los archivos terraform estén correctamente formateados.
+    - No aplica cambios, solamente verifica si el formato es correcto.
+    - Si hay errores, se registran en el log.
+- `terraform validate` para verificar que los archivos `.tf` sean válidos según el punto de vista de terraform .
+    - Revisa errores, como recursos mal definidos, sintaxis inválidas, etc.
+    - La validación se realiza directamente desde el directorio `adapter/`.
+
+**Uso:**
+
+```bash
+bash scripts/validate_adapter.sh
+```
+
+**Verificar que se tiene instaladas estas herramientas localmente. Puede ver cómo instalarlas en la sección `Herramientas usadas y cómo instalarlas`**
+
+## Pruebas
+
+Para asegurar que el código funcione correctamente y cumpla con los requisitos, se ha añadido este apartado de pruebas usando **pytest**. Las pruebas se encuentran en la carpeta `test/`
+
+### Archivo `pytest.ini`
+
+El archivo `pytest.ini` se ha configurado para personalizar el comportamiento de las pruebas y establecer ciertas reglas, como la cobertura minima y la ejecucion de tests. El contenido es el siguiente: 
+
+```ini
+[pytest]
+addopts = --maxfail=1 --disable-warnings --cov=adapter --cov=facade --cov=mediator --cov=cliente_a --cov=cliente_b --cov-fail-under=80
+python_files = tests/test_*.py
+```
+
+**Addopts**
+
+- `--maxfile=1`: Limita la ejecucion de pruebas a un solo fallo. Si un test falla, pytest se detendra y no ejecutara los tests restantes.
+- `--disable-warnings`: Desactiva la visualización de advertencias no criticas y hace que la salida sea más limpia de leer.
+- `--cov=<module>`: Aqui indica que mida la cobertura en los modulos asignados.
+- `--cov-fail-under=80`: Establece un umbral mínimo de 80% de cobertura para módulos indicados. Si la cobertura es menor del 80%, los test fallaran.
+
+**Python_files**
+
+- `tests/test_*.py`: Todos los archivos de prueba dentro de la carpeta `tests/` que sigan el patrón `test_*.py` serán ejecutados.
+
+Esto nos facilita ya que al ejecutar **pytest** en el proyecto, las opciones definidas en `pytest.ini` se aplicaran automaticamente. Solamente basta con escribir en lo siguiente en la linea de comandos para que se ejecute las pruebas:
+
+```bash
+pytest
 ```
