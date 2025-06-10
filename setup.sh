@@ -21,6 +21,7 @@ fi
 
 # 2. Activando entorno virtual
 echo "[INFO] Activando entorno virtual..."
+# shellcheck source=/dev/null
 source venv/bin/activate
 
 # 3. Instalar dependencias de requirements.txt
