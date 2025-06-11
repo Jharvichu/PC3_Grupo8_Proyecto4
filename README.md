@@ -209,3 +209,34 @@ bash scripts/validate_adapter.sh
 ```
 
 **Verificar que se tiene instaladas estas herramientas localmente. Puede ver cómo instalarlas en la sección `Herramientas usadas y cómo instalarlas`**
+
+## Pruebas
+
+Para asegurar que el código funcione correctamente y cumpla con los requisitos, se ha añadido este apartado de pruebas usando **pytest**. Las pruebas se encuentran en la carpeta `test/`
+
+### Archivo `pytest.ini`
+
+El archivo `pytest.ini` se ha configurado para personalizar el comportamiento de las pruebas y establecer ciertas reglas, como la cobertura minima y la ejecucion de tests. El contenido es el siguiente: 
+
+```ini
+[pytest]
+addopts = --maxfail=1 --disable-warnings --cov=adapter --cov=facade --cov=mediator --cov=cliente_a --cov=cliente_b --cov-fail-under=80
+python_files = tests/test_*.py
+```
+
+**Addopts**
+
+- `--maxfile=1`: Limita la ejecucion de pruebas a un solo fallo. Si un test falla, pytest se detendra y no ejecutara los tests restantes.
+- `--disable-warnings`: Desactiva la visualización de advertencias no criticas y hace que la salida sea más limpia de leer.
+- `--cov=<module>`: Aqui indica que mida la cobertura en los modulos asignados.
+- `--cov-fail-under=80`: Establece un umbral mínimo de 80% de cobertura para módulos indicados. Si la cobertura es menor del 80%, los test fallaran.
+
+**Python_files**
+
+- `tests/test_*.py`: Todos los archivos de prueba dentro de la carpeta `tests/` que sigan el patrón `test_*.py` serán ejecutados.
+
+Esto nos facilita ya que al ejecutar **pytest** en el proyecto, las opciones definidas en `pytest.ini` se aplicaran automaticamente. Solamente basta con escribir en lo siguiente en la linea de comandos para que se ejecute las pruebas:
+
+```bash
+pytest
+```
