@@ -1,5 +1,9 @@
 # PC3_Grupo8_Proyecto4
 
+# **`SPRINT 01`**
+
+[Video del Sprint_01-Grupo_8-Proyecto_4](https://www.youtube.com/watch?v=b1zwGS-fzuc)
+
 ## Archivo `setup.sh`
 
 **Archivo importante, ejecutar al inicio.**
@@ -210,8 +214,54 @@ bash scripts/validate_adapter.sh
 
 **Verificar que se tiene instaladas estas herramientas localmente. Puede ver cómo instalarlas en la sección `Herramientas usadas y cómo instalarlas`**
 
+### 3. `run_all.sh`
 
-## Archivo `adapter_output.py`
+Este script orquesta la ejecución de los módulos de Terraform en el proyecto, registrando la salida de cada paso en archivos de log dentro de la carpeta logs/. Si la carpeta logs/ no existe, la crea automáticamente.
+
+El objetivo es gestionar y ejecutar los módulos de Terraform de manera secuencial y controlada, permitiendo la ejecución selectiva de cada paso según se especifique en el parámetro --step.
+
+Ejecuta:
+
+- `log_message()`: Creación de la carpeta de logs
+
+  - Si la carpeta `logs/` no existe, se crea automáticamente.
+  - Los logs de cada paso se guardan en archivos dentro de esta carpeta.
+
+- `run_terraform()`: Ejecución de Terraform
+
+  - Ejecuta el comando `terraform init` para inicializar el módulo.
+  - Ejecuta el comando `terraform apply` para aplicar los cambios definidos en el módulo.
+  - Registra los resultados de la ejecución en un archivo de log.
+
+- Control del flujo con el parámetro `--step`:
+
+  - Permite ejecutar módulos específicos (como `adapter`, `facade`, `mediator`, etc.) al indicar el paso deseado.
+  - Si se proporciona un paso desconocido o no válido, el script muestra un mensaje de error.
+
+Uso general:
+
+``` bash
+chmod +x run_all.sh
+./run_all.sh --step <nombre_del_paso>
+```
+
+#### Paso Adapter
+
+Se comprueba que el paso solicitado sea el adapter y ejecuta los siguiente:
+
+- Se ejecuta `run_terraform` en el modulo **adapter**
+- Se cambia de directorio del modulo **adapter**
+- Se ejecuta el script `adapter_parse.sh` para que quede registro en `logs/adapter.log`.
+
+Ejemplo:
+
+``` bash
+./run_all.sh --step adapter
+```
+
+## Modulo Adapter
+
+### 1. Archivo `adapter_output.py`
 Este script tiene como objetivo generar una salida `JSON` estática que puede ser utilizada por otros componentes del sistema. Realiza las siguientes operaciones:
 
 - Importa el módulo estándar `json` de `Python`, que permite trabajar con datos en formato `JSON`.
@@ -239,7 +289,7 @@ Este tipo de script se usa generalmente para: generar archivos `json` de forma a
 
 
 
-## Archivo adapter_parse.sh
+### 2. Archivo `adapter_parse.sh`
 
 Este archivo automatiza la lectura de datos generados por un script Python `adapter_output.py` y transforma dicha información en un archivo `.tfvars` legible por Terraform. También registra logs y exporta variables de entorno para su posible reutilización. Realiza las siguientes operaciones:
 
@@ -252,30 +302,23 @@ Este archivo automatiza la lectura de datos generados por un script Python `adap
 
 Se puede ejecutar primero dando permisos:
 
-```
+``` bash
 chmod +x adapter/adapter_parse.sh
 ```
 
 después :
 
-```
+``` bash
 ./adapter_parse.sh
 ```
-
 
 Este script es bastante útil para automatizar flujos donde: 
 
 - Se generan valores dinámicos desde scripts.
-
 - Esos valores deben ser leídos por Terraform.
-
 - Se quieren reutilizar variables en otras partes del sistema.
 
-
-
-
-## Archivo main.tf
-
+### 3. Archivo `main.tf`
 
 Este archivo es importante porque:
 
@@ -285,22 +328,46 @@ Este archivo es importante porque:
 
 Este script se puede ejecutar primero haciendo `terraform init`, luego `terraform plan` y después `terraform apply`.
 
-
 Lastimosamente no es portable: si otra persona usa Windows o no tiene instalado `python3` , fallará.
 
 Si se desea instalar `python3` desde Ubuntu puedes ejecutar:
 
-
-```bash
+``` bash
 sudo apt update
 sudo apt install python3 python3-pip -y
 ```
 
 y verificas mediante:
 
-```
+``` bash
 python3 --versión
 ```
 
+## Script `generar_dependencies.py`
  
+Este script crea un archivo dependencies.json con contenido estático, que describe las dependencias entre los módulos del proyecto.
 
+**Funcionalidad:**
+
+- **Generación de dependencies.json**: El script define un diccionario con las dependencias de los módulos:
+
+    - `adapter` no tiene dependencias.
+    - `facade` depende de `adapter`.
+    - `mediator` depende de `adapter` y `facade`.
+
+- **Escritura del Archivo JSON**: El diccionario de dependencias se guarda en un archivo llamado `dependencies.json`, utilizando formato JSON con indentación de 4 espacios.
+
+**Uso:**
+```bash
+python3 generar_dependencies.py
+```
+
+**Salida:** (dependencies.json):
+
+```json
+{
+    "adapter": [],
+    "facade": ["adapter"],
+    "mediator": ["adapter", "facade"]
+}
+```
