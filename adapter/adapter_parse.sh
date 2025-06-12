@@ -1,26 +1,39 @@
 #!/bin/bash
 
-# Se verifica dependencias y el archivo
-command -v python3 >/dev/null || { echo "Falta python3"; exit 1; }
-command -v jq >/dev/null || { echo "Falta jq"; exit 1; }
-[ -r adapter_output.py ] || { echo "No se puede leer adapter_output.py"; exit 1; }
+# Si es que no existiera la carpeta logs, entonces se procede a crearla
+mkdir -p ../logs
 
-# Se procede a ejecutar Python y extraer datos
-output=$(python3 adapter_output.py)
-status=$(jq -r '.status' <<< "$output")
-code=$(jq -r '.code' <<< "$output")
+# Acá puse las rutas
+LOG="../logs/adapter.log"
+TFVARS="terraform.tfvars"
 
-# Escribir archivo .tfvars
-cat > adapter.auto.tfvars <<EOF
-adapter_status = "$status"
-adapter_code = $code
+# Ejecutar el script  adapter_output.py y guardar salida; registrar errores si falla
+if ! OUTPUT=$(python3 adapter_output.py 2>>"$LOG"); then
+echo "Error ejecutando adapter_output.py" >> "$LOG"
+exit 1
+fi
+
+# Extraer valores desde la salida del JSON
+STATUS=$(jq -r '.status' <<< "$OUTPUT")
+CODE=$(jq -r '.code' <<< "$OUTPUT")
+
+# Se verifica si estos archivos existen
+[[ -z "$STATUS" || -z "$CODE" ]] && {
+echo "Error extrayendo status o code de la salida" >> "$LOG"
+exit 1
+}
+
+# Se escribe en el archivo tfvars  estas 2 variables
+cat <<EOF > "$TFVARS"
+adapter_status = "$STATUS"
+adapter_code = $CODE
 EOF
 
-# Registrar log
-mkdir -p ../logs
-[ -w ../logs ] || { echo "No se puede escribir en ../logs"; exit 1; }
-echo "[$(date '+%F %T')] status=$status code=$code" >> ../logs/adapter.log
+# Aca registro la documentación exitosa
+echo "$(date '+%Y-%m-%d %H:%M:%S') | adapter_parse.sh ejecutado correctamente" >> "$LOG"
 
-# Exportar variables al entorno
-export adapter_status="$status"
-export adapter_code=$code
+if [[ ! -f terraform.tfvars ]]; then
+echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR: terraform.tfvars no fue generado" >> ../logs/adapter.log
+exit 1
+fi
+
