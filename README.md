@@ -240,3 +240,62 @@ Esto nos facilita ya que al ejecutar **pytest** en el proyecto, las opciones def
 ```bash
 pytest
 ```
+
+## Facade
+
+### 1. `variables.tf`
+
+Este archivo define las variables de entrada para el módulo que permitirán parametrizar el nombre del directorio y del archivo que se crearán.
+
+- `facade_dir`: Nombre del directorio por crear (por defecto, `facade_dir`).
+- `facade_file`: Nombre del archivo por crear dentro del directorio (por defecto, `facade_file.txt`)
+
+### 2. `main.tf`
+
+Este archivo contiene los recursos principales de terraform:
+
+- `create_folder`: Ejecuta el script `create_folder.sh` para crear el directorio `facade_dir/`.
+- `create_file`: Este depende de `create_folder`. Ejecuta el script `create_file.sh`, que crea el archivo `facade_file.txt` dentro de `facade_dir/`.
+- `start_service`: Este depende de `create_file`. Ejecuta el script `start_service.sh`, que lanza un servicio python y lo ejecuta en segundo plano.
+
+Gracias a la aplicación de `depends_on` nos aseguramos que los scripts se ejecuten en un orden correcto.
+
+### 3. `outputs.tf`
+
+Este archivo muestra salidas del módulo para que puedan ser consultadas desde otros módulos o luego de ejecutar `terrafrom apply`:
+
+- `facade_dir`: Nombre del directorio creado.
+- `facade_file`: Ruta del archivo creado (`facade_file`) dentro del directorio ya mencionado.
+
+### 4. `create_folder.sh`
+
+- Crea el directorio `facade_dir/` si es que no existe.
+- Usa el comando `mkdir -p` para que no falle en caso que el directorio ya exista.
+
+### 5. `create_file.sh`
+
+- Crea un archivo dentro de `facade_dir` de nombre `facade_file.txt`.
+- Se escribe en el archivo el texto "create_file creó este archivo" como una opción para comprobar que el script funcionó.
+
+### 6. `start_service.sh`
+
+- Crea en la raiz del proyecto el directorio `logs/` en caso que no exista.
+- Lanza el script `service_dummy.py` usando `nohup` para que el proceso siga ejecutandose en segundo plano.
+- Redirige las salidas al archivo `logs/facade_service.log`.
+- Con `$(dirname "$0")` nos garantizamos que el script se ejecute desde la dirección relativa correcta.
+
+### 7. `service_dummy.py`
+
+- Simula un servicio.
+- Permanece ejecutándose en un bucle infinito, con pausas de 10 segundos.
+- El parámetro `flush=True` nos asegura que el mensaje se escriba en el log.
+
+### Flujo de ejecución
+
+1. Se ejecuta `terraform init` para prepara el módulo.
+
+2. Se ejecuta `terraform apply`, con esto conseguimos:
+    - Crear el directorio.
+    - Crear el archivo.
+    - Lanzar el servicio python.
+    - Generar los logs.
