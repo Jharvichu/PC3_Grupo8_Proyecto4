@@ -1,0 +1,3 @@
+[run]
+omit =
+    facade/service_dummy.py
