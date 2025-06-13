@@ -1,11 +1,11 @@
-variable "facade_dir"{
+variable "facade_dir" {
   description = "Nombre del directorio por crear"
-  type = string
-  default = "facade_dir"
+  type        = string
+  default     = "facade_dir"
 }
 
-variable "facade_file"{
+variable "facade_file" {
   description = "Nombre del archivo por crear"
-  type = string
-  default = "facade_file.txt"
+  type        = string
+  default     = "facade_file.txt"
 }

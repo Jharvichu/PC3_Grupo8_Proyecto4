@@ -5,17 +5,17 @@ mkdir -p ../logs
 
 # Función para registrar el log con fecha y mensaje
 log_message() {
-    echo "[$(date '+%F %T')] $1" >> ../logs/$2.log
+    echo "[$(date '+%F %T')] $1" >> ../logs/"$2".log
 }
 
 # Función para ejecutar Terraform en un módulo
 run_terraform() {
     MODULE=$1
-    log_message "Iniciando Terraform en el módulo $MODULE" $MODULE
-    cd ../$MODULE
+    log_message "Iniciando Terraform en el módulo $MODULE" "$MODULE"
+    cd ../"$MODULE" || exit
     terraform init
     terraform apply -auto-approve
-    log_message "Terraform apply en el módulo $MODULE completado" $MODULE
+    log_message "Terraform apply en el módulo $MODULE completado" "$MODULE"
     cd ..
 }
 
@@ -25,7 +25,7 @@ if [ "$1" == "--step" ]; then
     case $STEP in
         adapter)
             run_terraform "adapter"
-            cd $STEP
+            cd "$STEP" || exit
             chmod + adapter_parse.sh
             ./adapter_parse.sh
             ;;
