@@ -29,11 +29,11 @@ adapter_status = "$STATUS"
 adapter_code = $CODE
 EOF
 
-# Aca registro la documentación exitosa
-echo "$(date '+%Y-%m-%d %H:%M:%S') | adapter_parse.sh ejecutado correctamente" >> "$LOG"
+# Aca se configura para que haya una ejecuci{on exitosa
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] adapter_parse.sh ejecutado correctamente" >> "$LOG"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] STATUS: $STATUS CODE:$CODE" >> "$LOG"
 
 if [[ ! -f terraform.tfvars ]]; then
-echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR: terraform.tfvars no fue generado" >> ../logs/adapter.log
-exit 1
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: terraform.tfvars no fue generado" >> ../logs/adapter.log
+    exit 1
 fi
-
