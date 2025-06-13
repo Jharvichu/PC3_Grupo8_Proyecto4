@@ -1,10 +1,17 @@
-resource "null_resource" "adapter_exec" {
-  #se crea un recurso nulo dentro de Terraform.
-  provisioner "local-exec" {
-    # especifica que se va a ejecutar un comando local en la maquina de Terraform
-    command = "python3 ${path.module}/adapter_output.py > adapter_output.json"
-    # Ejecuta el script Python, dentro del módulo actual (${path.module}
+variable "adapter_status" {
+  description = "Estado reportado por el adapter"
+  type        = string
+}
 
-  }
+variable "adapter_code" {
+  description = "Código reportado por el adapter"
+  type        = number
+}
 
+output "adapter_status" {
+  value = var.adapter_status
+}
+
+output "adapter_code" {
+  value = var.adapter_code
 }
