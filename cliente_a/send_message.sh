@@ -12,4 +12,4 @@ FILE="$DIR/message_a.txt"
 echo "{\"msg\": \"$MSG\", \"timestamp\": \"$TIME\"}" > "$FILE"
 
 echo "[cliente_a] Mensaje guardado en $FILE:"
-cat "$FILE"i
+cat "$FILE"
