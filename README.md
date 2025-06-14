@@ -1,5 +1,9 @@
 # PC3_Grupo8_Proyecto4
 
+# **`SPRINT 01`**
+
+[Video del Sprint_01-Grupo_8-Proyecto_4](https://www.youtube.com/watch?v=b1zwGS-fzuc)
+
 ## Archivo `setup.sh`
 
 **Archivo importante, ejecutar al inicio.**
@@ -210,8 +214,54 @@ bash scripts/validate_adapter.sh
 
 **Verificar que se tiene instaladas estas herramientas localmente. Puede ver cómo instalarlas en la sección `Herramientas usadas y cómo instalarlas`**
 
+### 3. `run_all.sh`
 
-## Archivo `adapter_output.py`
+Este script orquesta la ejecución de los módulos de Terraform en el proyecto, registrando la salida de cada paso en archivos de log dentro de la carpeta logs/. Si la carpeta logs/ no existe, la crea automáticamente.
+
+El objetivo es gestionar y ejecutar los módulos de Terraform de manera secuencial y controlada, permitiendo la ejecución selectiva de cada paso según se especifique en el parámetro --step.
+
+Ejecuta:
+
+- `log_message()`: Creación de la carpeta de logs
+
+  - Si la carpeta `logs/` no existe, se crea automáticamente.
+  - Los logs de cada paso se guardan en archivos dentro de esta carpeta.
+
+- `run_terraform()`: Ejecución de Terraform
+
+  - Ejecuta el comando `terraform init` para inicializar el módulo.
+  - Ejecuta el comando `terraform apply` para aplicar los cambios definidos en el módulo.
+  - Registra los resultados de la ejecución en un archivo de log.
+
+- Control del flujo con el parámetro `--step`:
+
+  - Permite ejecutar módulos específicos (como `adapter`, `facade`, `mediator`, etc.) al indicar el paso deseado.
+  - Si se proporciona un paso desconocido o no válido, el script muestra un mensaje de error.
+
+Uso general:
+
+``` bash
+chmod +x run_all.sh
+./run_all.sh --step <nombre_del_paso>
+```
+
+#### Paso Adapter
+
+Se comprueba que el paso solicitado sea el adapter y ejecuta los siguiente:
+
+- Se ejecuta `run_terraform` en el modulo **adapter**
+- Se cambia de directorio del modulo **adapter**
+- Se ejecuta el script `adapter_parse.sh` para que quede registro en `logs/adapter.log`.
+
+Ejemplo:
+
+``` bash
+./run_all.sh --step adapter
+```
+
+## Modulo Adapter
+
+### 1. Archivo `adapter_output.py`
 Este script tiene como objetivo generar una salida `JSON` estática que puede ser utilizada por otros componentes del sistema. Realiza las siguientes operaciones:
 
 - Importa el módulo estándar `json` de `Python`, que permite trabajar con datos en formato `JSON`.
@@ -239,7 +289,7 @@ Este tipo de script se usa generalmente para: generar archivos `json` de forma a
 
 
 
-## Archivo adapter_parse.sh
+### 2. Archivo `adapter_parse.sh`
 
 Este archivo automatiza la lectura de datos generados por un script Python `adapter_output.py` y transforma dicha información en un archivo `.tfvars` legible por Terraform. También registra logs y exporta variables de entorno para su posible reutilización. Realiza las siguientes operaciones:
 
@@ -252,30 +302,23 @@ Este archivo automatiza la lectura de datos generados por un script Python `adap
 
 Se puede ejecutar primero dando permisos:
 
-```
+``` bash
 chmod +x adapter/adapter_parse.sh
 ```
 
 después :
 
-```
+``` bash
 ./adapter_parse.sh
 ```
 
-
-Este script es bastante útil para automatizar flujos donde: 
+Este script es bastante útil para automatizar flujos donde:
 
 - Se generan valores dinámicos desde scripts.
-
 - Esos valores deben ser leídos por Terraform.
-
 - Se quieren reutilizar variables en otras partes del sistema.
 
-
-
-
-## Archivo main.tf
-
+### 3. Archivo `main.tf`
 
 Este archivo es importante porque:
 
@@ -285,20 +328,18 @@ Este archivo es importante porque:
 
 Este script se puede ejecutar primero haciendo `terraform init`, luego `terraform plan` y después `terraform apply`.
 
-
 Lastimosamente no es portable: si otra persona usa Windows o no tiene instalado `python3` , fallará.
 
 Si se desea instalar `python3` desde Ubuntu puedes ejecutar:
 
-
-```bash
+``` bash
 sudo apt update
 sudo apt install python3 python3-pip -y
 ```
 
 y verificas mediante:
 
-```
+``` bash
 python3 --versión
 ```
 
@@ -371,3 +412,122 @@ bash receive_message.sh
 {"msg": "Hola Mediators", "timestamp": "2025-06-13T21:53:56-04:00"}
 
 
+## Script `generar_dependencies.py`
+ 
+Este script crea un archivo dependencies.json con contenido estático, que describe las dependencias entre los módulos del proyecto.
+
+
+**Funcionalidad:**
+
+- **Generación de dependencies.json**: El script define un diccionario con las dependencias de los módulos:
+
+    - `adapter` no tiene dependencias.
+    - `facade` depende de `adapter`.
+    - `mediator` depende de `adapter` y `facade`.
+
+- **Escritura del Archivo JSON**: El diccionario de dependencias se guarda en un archivo llamado `dependencies.json`, utilizando formato JSON con indentación de 4 espacios.
+
+**Uso:**
+```bash
+python3 generar_dependencies.py
+```
+
+**Salida:** (dependencies.json):
+
+```json
+{
+    "adapter": [],
+    "facade": ["adapter"],
+    "mediator": ["adapter", "facade"]
+}
+```
+
+## Pruebas
+
+Para asegurar que el código funcione correctamente y cumpla con los requisitos, se ha añadido este apartado de pruebas usando **pytest**. Las pruebas se encuentran en la carpeta `test/`
+
+### Archivo `pytest.ini`
+
+El archivo `pytest.ini` se ha configurado para personalizar el comportamiento de las pruebas y establecer ciertas reglas, como la cobertura minima y la ejecucion de tests. El contenido es el siguiente:
+
+```ini
+[pytest]
+addopts = --maxfail=1 --disable-warnings --cov=adapter --cov=facade --cov=mediator --cov=cliente_a --cov=cliente_b --cov-fail-under=80
+python_files = tests/test_*.py
+```
+
+**Addopts**
+
+- `--maxfile=1`: Limita la ejecucion de pruebas a un solo fallo. Si un test falla, pytest se detendra y no ejecutara los tests restantes.
+- `--disable-warnings`: Desactiva la visualización de advertencias no criticas y hace que la salida sea más limpia de leer.
+- `--cov=<module>`: Aqui indica que mida la cobertura en los modulos asignados.
+- `--cov-fail-under=80`: Establece un umbral mínimo de 80% de cobertura para módulos indicados. Si la cobertura es menor del 80%, los test fallaran.
+
+**Python_files**
+
+- `tests/test_*.py`: Todos los archivos de prueba dentro de la carpeta `tests/` que sigan el patrón `test_*.py` serán ejecutados.
+
+Esto nos facilita ya que al ejecutar **pytest** en el proyecto, las opciones definidas en `pytest.ini` se aplicaran automaticamente. Solamente basta con escribir en lo siguiente en la linea de comandos para que se ejecute las pruebas:
+
+```bash
+pytest
+```
+
+## Facade
+
+### 1. `variables.tf`
+
+Este archivo define las variables de entrada para el módulo que permitirán parametrizar el nombre del directorio y del archivo que se crearán.
+
+- `facade_dir`: Nombre del directorio por crear (por defecto, `facade_dir`).
+- `facade_file`: Nombre del archivo por crear dentro del directorio (por defecto, `facade_file.txt`)
+
+### 2. `main.tf`
+
+Este archivo contiene los recursos principales de terraform:
+
+- `create_folder`: Ejecuta el script `create_folder.sh` para crear el directorio `facade_dir/`.
+- `create_file`: Este depende de `create_folder`. Ejecuta el script `create_file.sh`, que crea el archivo `facade_file.txt` dentro de `facade_dir/`.
+- `start_service`: Este depende de `create_file`. Ejecuta el script `start_service.sh`, que lanza un servicio python y lo ejecuta en segundo plano.
+
+Gracias a la aplicación de `depends_on` nos aseguramos que los scripts se ejecuten en un orden correcto.
+
+### 3. `outputs.tf`
+
+Este archivo muestra salidas del módulo para que puedan ser consultadas desde otros módulos o luego de ejecutar `terrafrom apply`:
+
+- `facade_dir`: Nombre del directorio creado.
+- `facade_file`: Ruta del archivo creado (`facade_file`) dentro del directorio ya mencionado.
+
+### 4. `create_folder.sh`
+
+- Crea el directorio `facade_dir/` si es que no existe.
+- Usa el comando `mkdir -p` para que no falle en caso que el directorio ya exista.
+
+### 5. `create_file.sh`
+
+- Crea un archivo dentro de `facade_dir` de nombre `facade_file.txt`.
+- Se escribe en el archivo el texto "create_file creó este archivo" como una opción para comprobar que el script funcionó.
+
+### 6. `start_service.sh`
+
+- Crea en la raiz del proyecto el directorio `logs/` en caso que no exista.
+- Lanza el script `service_dummy.py` usando `nohup` para que el proceso siga ejecutandose en segundo plano.
+- Redirige las salidas al archivo `logs/facade_service.log`.
+- Con `$(dirname "$0")` nos garantizamos que el script se ejecute desde la dirección relativa correcta.
+
+### 7. `service_dummy.py`
+
+- Simula un servicio.
+- Permanece ejecutándose en un bucle infinito, con pausas de 10 segundos.
+- El parámetro `flush=True` nos asegura que el mensaje se escriba en el log.
+
+### Flujo de ejecución
+
+1. Se ejecuta `terraform init` para prepara el módulo.
+
+2. Se ejecuta `terraform apply`, con esto conseguimos:
+    - Crear el directorio.
+    - Crear el archivo.
+    - Lanzar el servicio python.
+    - Generar los logs.

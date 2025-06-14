@@ -1,5 +1,6 @@
 import json
 
+
 # Crea dependencies.json con contenido estatico
 def generar_dependencies():
     dependencies = {
@@ -10,6 +11,7 @@ def generar_dependencies():
 
     with open('dependencies.json', 'w') as f:
         json.dump(dependencies, f, indent=4)
+
 
 if __name__ == "__main__":
     generar_dependencies()
