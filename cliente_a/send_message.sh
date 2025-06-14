@@ -1,14 +1,15 @@
 #!/bin/bash
-# Script para enviar un mensaje desde cliente_a a través del Mediator
 
-# Mensaje: se puede pasar por argumento o usar variable de entorno
-MSG="${1:-${CLIENT_A_MSG:-'Hola desde cliente A'}}"
-TIMESTAMP="$(date -Iseconds)"
-OUTPUT_FILE="message_a.txt"
+# Se detecta el directorio donde está el script
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Crear el JSON y escribirlo en message_a.txt
-echo "{\"msg\": \"$MSG\", \"timestamp\": \"$TIMESTAMP\"}" > "$OUTPUT_FILE"
+# Mensaje por defecto o pasado como argumento
+MSG="${1:-'Hola desde cliente A'}"
+TIME="$(date -Iseconds)"
+FILE="$DIR/message_a.txt"
 
-echo "[cliente_a] Mensaje escrito en $OUTPUT_FILE:"
+# Se guarda el mensaje
+echo "{\"msg\": \"$MSG\", \"timestamp\": \"$TIME\"}" > "$FILE"
 
-cat "$OUTPUT_FILE"
+echo "[cliente_a] Mensaje guardado en $FILE:"
+cat "$FILE"i
