@@ -562,3 +562,20 @@ Es un script bash que es ejecutado luego de `mediator_read.sh`.
 
 - Captura el mensaje dentro de `tmp_message.txt`.
 - Lo copia como `message_b.txt`, que será tomado por `cliente_b`.
+
+### Ejecución
+
+1. Primero, debemos asegurarnos que el archivo `message_a.txt` esté creado dentro del directorio `cliente_a/`, por el momento podemos ejecutarlo usando el siguiente comando desde la raiz del proyecto:
+```bash
+$ bash cliente_a/send_message.sh
+```
+2. Ya creado el archivo `message_a.txt`, nos dirigimos al directorio `mediator/`:
+```bash
+$ cd mediator
+```
+3. Ejecutamos:
+```bash
+$ terraform init
+$ terraform apply -auto-approve
+```
+Luego de ejecutar terraform, se generarán `tmp_message.sh` y también `message_b.txt`, este último será leído por `cliente_b/`. Dicha función se implementará en el **Sprint 3**.
