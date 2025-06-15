@@ -579,3 +579,44 @@ $ terraform init
 $ terraform apply -auto-approve
 ```
 Luego de ejecutar terraform, se generarán `tmp_message.sh` y también `message_b.txt`, este último será leído por `cliente_b/`. Dicha función se implementará en el **Sprint 3**.
+
+## `generar_dependencies.py`
+
+Este archivo, `dependencies.json`, contiene un listado de dependencias entre los módulos de Terraform en el proyecto. Este archivo se utiliza para mantener un registro de las relaciones entre los módulos.
+
+### ¿Como se genera?
+
+El archivo `dependencies.json` es generado automáticamente mediante el script `generar_dependencies.py`, el cual analiza los archivos `.tf` en los módulos `adapter`, `facade`, y `mediator`. El script busca las declaraciones de dependencias dentro de los archivos Terraform y las organiza en el archivo `dependencies.json`.
+
+#### Pasos para generar `dependencies.json`:
+
+Para generar el archivo `dependencies.json`, simplemente ejecuta el siguiente comando en la raíz del proyecto:
+
+```bash
+python3 generar_dependencies.py
+```
+
+#### ¿Qué hace el script?:
+
+- El script recorre las carpetas de los módulos adapter, facade, y mediator.
+- Dentro de cada módulo, busca los archivos main.tf.
+- Extrae las dependencias definidas con las palabras clave depends_on, module, var, y data.
+- Genera el archivo dependencies.json con las dependencias de cada módulo.
+
+#### Ejemplo de salida al ejecutar al final del sprint 02
+
+```json
+{
+    "adapter": [
+        "adapter_status",
+        "adapter_code"
+    ],
+    "facade": [
+        "null_resource.create_folder",
+        "null_resource.create_file"
+    ],
+    "mediator": [
+        "null_resource.mediator_read"
+    ]
+}
+```
