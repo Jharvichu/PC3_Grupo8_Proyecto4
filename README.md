@@ -473,6 +473,8 @@ Esto nos facilita ya que al ejecutar **pytest** en el proyecto, las opciones def
 pytest
 ```
 
+# **`SPRINT 02`**
+
 ## Facade
 
 ### 1. `variables.tf`
@@ -531,3 +533,49 @@ Este archivo muestra salidas del módulo para que puedan ser consultadas desde o
     - Crear el archivo.
     - Lanzar el servicio python.
     - Generar los logs.
+
+## Mediator
+
+Este módulo va a coordinar el flujo de los mensajes entre `cliente_a` y `cliente_b`
+
+### 1. `main.tf`
+
+Es el archivo principal de terraform para este módulo.
+
+- Se define los recursos terraform necesarios para la coordinación de los mensajes entre `cliente_a` y `cliente_b`.
+- Contiene 02 recursos `null_resource`:
+    - `mediator_read`: Ejecuta el script que leerá el mensaje de `cliente_a`.
+    - `mediator_forward`: Ejecuta el script que reenviará el mensaje a `cliente_b`.
+- Adicionalmente, se usa `depends_on` para asegurarnos que los scripts se ejecutarán en el orden correcto.
+
+### 2. `mediator_read.sh`
+
+Es un script bash que es ejecutado por Terraform.
+
+- Valida que exista el archivo `cliente_a/message_a.txt`, que es generado por `cliente_a`.
+- Lee el contenido de dicho archivo (mensaje).
+- Copia el mensaje a un archivo temporal (`tmp_message.txt`), dentro del módulo mediator, para su posterior proceso.
+
+### 2. `mediator_forward.sh`
+
+Es un script bash que es ejecutado luego de `mediator_read.sh`.
+
+- Captura el mensaje dentro de `tmp_message.txt`.
+- Lo copia como `message_b.txt`, que será tomado por `cliente_b`.
+
+### Ejecución
+
+1. Primero, debemos asegurarnos que el archivo `message_a.txt` esté creado dentro del directorio `cliente_a/`, por el momento podemos ejecutarlo usando el siguiente comando desde la raiz del proyecto:
+```bash
+$ bash cliente_a/send_message.sh
+```
+2. Ya creado el archivo `message_a.txt`, nos dirigimos al directorio `mediator/`:
+```bash
+$ cd mediator
+```
+3. Ejecutamos:
+```bash
+$ terraform init
+$ terraform apply -auto-approve
+```
+Luego de ejecutar terraform, se generarán `tmp_message.sh` y también `message_b.txt`, este último será leído por `cliente_b/`. Dicha función se implementará en el **Sprint 3**.
