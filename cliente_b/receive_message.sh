@@ -1,7 +1,10 @@
 #!/bin/bash
 # Script para recibir el mensaje reenviado por el Mediator
 
-INPUT_FILE="../mediator/message_b.txt"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$DIR/.."
+
+INPUT_FILE="$BASE_DIR/mediator/message_b.txt"
 
 if [ ! -f "$INPUT_FILE" ]; then
 echo "[cliente_b] ERROR: No se encontró $INPUT_FILE."
