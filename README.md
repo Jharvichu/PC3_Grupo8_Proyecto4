@@ -579,3 +579,44 @@ $ terraform init
 $ terraform apply -auto-approve
 ```
 Luego de ejecutar terraform, se generarán `tmp_message.sh` y también `message_b.txt`, este último será leído por `cliente_b/`. Dicha función se implementará en el **Sprint 3**.
+
+## Scripts
+
+### `run_all.sh`
+Este script sirve como orquestador general del proyecto, automatizando la ejecución de los distintos módulos Terraform (`adapter`, `facade`, `mediator`, `cliente_a`, `cliente_b`) en el orden correcto y registrando sus resultados.
+
+**Funciones**
+- `log_message(mensaje, módulo)`: Registra un mensaje en el archivo logs/<módulo>.log, añadiendo un timestamp para seguimiento.
+Útil para trazabilidad durante la ejecución de los pasos.
+
+- `run_terraform(módulo, archivo_tfvars)`: Ejecuta terraform init y terraform apply en el módulo indicado. Si se proporciona un archivo .tfvars, lo aplica con sus variables; si no, ejecuta sin parámetros adicionales. También registra en el log correspondiente.
+
+**Pasos definidos (`--step`)**
+- **`adapter`**: Ejecuta el módulo `adapter/` con sus variables definidas. Antes de aplicar Terraform, se ejecuta el script `adapter_parse.sh` para convertir la salida de un script Python en variables legibles por Terraform.
+
+- **`facade`**: Ejecuta el módulo `facade/`, que encapsula la creación de una carpeta (`facade_dir`), un archivo (`facade_file.txt`) y el inicio de un servicio dummy. Registra una línea indicando que se generaron los recursos simulados.
+
+- **`mediator`**: Corre el módulo `mediator/`, el cual actúa como intermediario entre cliente_a y cliente_b. Antes de aplicar, ejecuta `send_message.sh` dentro de `cliente_a/`, simulando el envío de un mensaje. Luego aplica Terraform y se deja constancia en el log.
+
+- **`cliente_a`**: Ejecuta únicamente el script send_message.sh, que escribe un mensaje JSON (`message_a.txt`) que será leído por el mediator.
+
+- **`cliente_b`**: Ejecuta el script `receive_message.sh`, que lee el mensaje reenviado por el mediator y lo muestra en consola.
+
+**Uso general**
+
+```bash
+./run_all.sh --step <nombre_del_paso>
+```
+
+**Ejemplo de ejecución**
+
+```bash
+# Ejecutar el módulo adapter
+./run_all.sh --step adapter
+
+# Ejecutar todos los pasos de forma manual
+./run_all.sh --step facade
+./run_all.sh --step mediator
+./run_all.sh --step cliente_a
+./run_all.sh --step cliente_b
+```
