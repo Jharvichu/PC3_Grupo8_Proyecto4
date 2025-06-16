@@ -460,7 +460,7 @@ En este script puse una descripcion personalizada del `STATUS` Y `CODE`, ademas 
 **Salida:**
 
 Se genera un archivo terraform.tfstate, donde se aprecian los outputs y tambien las variables.
-Una parte del código generado en ese archivo es:
+Una parte del código generado en ese archivo seria:
 
 ```
   "outputs": {
