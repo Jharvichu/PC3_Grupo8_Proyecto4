@@ -475,6 +475,8 @@ pytest
 
 # **`SPRINT 02`**
 
+[Video del Sprint_01-Grupo_8-Proyecto_4](https://youtu.be/rFPDu2LMl10)
+
 ## Facade
 
 ### 1. `variables.tf`
