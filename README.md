@@ -660,3 +660,33 @@ Este script sirve como orquestador general del proyecto, automatizando la ejecuc
 ./run_all.sh --step cliente_a
 ./run_all.sh --step cliente_b
 ```
+
+
+## Nuevo adapter_parse.sh
+
+Permite que los valores generados por el adapter se pasen a Terraform sin necesidad de hacerlo manualmente. Genera  terraform.tfvars
+Su trazabilidad de la ejecucion lo registra en log(log/adapter.log). Ademas los errores los maneja con errores claros y salida controlada.
+
+**Ejemplo de ejecución**
+
+```
+# Da permisos si es que no los tuviese
+chmod +x adapter_parse.sh
+
+# Ejecutar el script
+./adapter_parse.sh
+```
+
+# **`SPRINT 03`**
+
+## script adapter_validate.py
+Este script lanza el archivo adapter_output.py y recoge su salida. Comprueba si esa salida esta en formato JSON, si es valido y si contiene las claves `status`y `code`. Genera un archivo Markdown `adapter_report.md`, el cual registra un error si hubo fallas y si todo es correco escribe un mensaje de Validacion exitosa con los valores de las claves.
+
+**Ejemplo de ejecución**
+
+```
+# Dentro de adapter ejecutar:
+python3 adapter_validate.py
+```
+
+
