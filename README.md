@@ -660,3 +660,40 @@ Este script sirve como orquestador general del proyecto, automatizando la ejecuc
 ./run_all.sh --step cliente_a
 ./run_all.sh --step cliente_b
 ```
+
+# **`SPRINT 03`**
+
+## Facade
+
+### `health_check.sh`
+
+Es un script bash que verifica si el proceso `service_dummy.py` está corriendo. Asegura que el servicio verdaderamente se ejecutó y que está activo.
+
+- Usa el comando `pgrep -f service_dummy.py` para buscar dicho proceso.
+- Si está corriendo el servicio, devuelve 0.
+- Si no está corriendo el servicio, devuelve 1.
+- Se ejecuta automáicamente después de `start_service.sh`, en `main.tf`.
+
+### `main.tf`
+
+- Se agrega el recurso `start_service` con la condición:
+```bash
+count = var.adapter_status == "OK" ? 1 : 0
+```
+
+- El recurso solamente se crea si el adapter manda el estado "OK".
+- Se añade también el provisioner para `health_check.sh` después de lanzar el servicio.
+- Si `adapter_status` es distinto de "OK", el servicio no se lanza y no se corre el `health_check.sh`.
+
+### `variables.tf`
+
+- Se agrega las variables `adapter_status`.
+- Estas modificaciones nos permite recibir parámetros generados por Adapter de forma dinámica.
+
+### `run_all.sh` (`scripts/`)
+
+- Ahora, al ejecutar el paso `facade`, se aplica terraform pasando el archivo `.tfvars` que se genera gracias a Adapter:
+```bash
+run_terraform "$STEP" "../adapter/terraform.tfvars"
+```
+- Estas modificaciones nos garantiza el pipeline Adapter -> Facade, sin intervención manual.
