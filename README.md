@@ -726,3 +726,36 @@ count = var.adapter_status == "OK" ? 1 : 0
 run_terraform "$STEP" "../adapter/terraform.tfvars"
 ```
 - Estas modificaciones nos garantiza el pipeline Adapter -> Facade, sin intervención manual.
+
+## Mediator
+
+### `mediator_read.sh`
+
+- Lee el mensaje desde `facade/facade_dir/message_a.txt` (nuevo origen, anteriormente el `message_a.txt` se generaba en el mismo `cliente_a`).
+- Se extrae solamente el campo `msg` usando `jq`, guardándolo temporalmente en `tmp_message.txt`.
+- Todas las operaciones que ocurran son anotadas en logs (`logs/adapter.log`).
+
+### `mediator_forward.sh`
+
+- Llama a `mediator_read.sh` para la obtención del mensaje.
+- Escribe el mensaje plano (el contenido de `msg`) a `message_b.txt` en el directorio `mediator/`.
+- Se agrega logs de las operaciones y se elimina el archiv temporal después de la creación de `message_b.txt`.
+
+### `main.tf`
+
+- Usa `terraform_remote_state` para obtener outputs del módulo facade.
+- Configura las rutas y dependencias para que el Mediator lea desde Facade.
+- Usa `null_resource` y `local-exec` para orquestar la llamada a los scripts Bash.
+
+### Modificaciones adicionales
+
+#### `cliente_a/send_message.sh`
+
+- Ahora genera el archivo `message_a.txt` en la ruta `facade/facade_dir/` en vez de `cliente_a/`.
+- Usa la variable de entorno `CLIENT_A_MSG` para definir el mensaje, con un valor por defecto si es que no se define.
+- Agrega verificación de existencia de la carpeta destino antes de escribir.
+
+#### `cliente_b/receive_message.sh`
+
+- Cambia la ruta de origen del mensaje a `mediator/message_b.txt` y lo copia a `cliente_b/message_b.txt`.
+- Muestra el mensaje recibido al usuario.
