@@ -9,9 +9,7 @@ INPUT_FILE="$BASE_DIR/mediator/message_b.txt"
 
 TIMEOUT=5
 ELAPSED=0
-
 OUTPUT_FILE="$DIR/message_b.txt"
-
 
 # Bucle que se repite hasta que el tiempo que transcurra sea igual al del timeout
 while [ $ELAPSED -lt $TIMEOUT ]; do
@@ -32,4 +30,3 @@ exit 1
 cp "$INPUT_FILE" "$OUTPUT_FILE"
 echo "[cliente_b] Mensaje recibido de $INPUT_FILE:"
 cat "$OUTPUT_FILE"
-
