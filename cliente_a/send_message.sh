@@ -9,11 +9,12 @@ FACADE_PATH="$BASE_DIR/facade/facade_dir"
 # Verifica si la carpeta, donde se almacenara el mensaje, existe
 if [ ! -d "$FACADE_PATH" ]; then
     echo "[ERROR] Carpeta facade_dir NO existe."
+    exit 1
 fi
 
 # Verifica que la variable de entorno CLIENT_A_MSG exista
 if [[ -z "$CLIENT_A_MSG" ]]; then
-    CLIENT_A_MSG="Luis de inspirate"
+    CLIENT_A_MSG="Mensaje predeterminado de send_message.sh"
 fi
 
 # Mensaje por defecto o pasado como argumento
