@@ -475,6 +475,8 @@ pytest
 
 # **`SPRINT 02`**
 
+[Video del Sprint_01-Grupo_8-Proyecto_4](https://youtu.be/rFPDu2LMl10)
+
 ## Facade
 
 ### 1. `variables.tf`
@@ -661,8 +663,11 @@ Este script sirve como orquestador general del proyecto, automatizando la ejecuc
 ./run_all.sh --step cliente_b
 ```
 
+# **`SPRINT 03`**
 
-## Nuevo adapter_parse.sh
+## Adapter
+
+### Nuevo adapter_parse.sh
 
 Permite que los valores generados por el adapter se pasen a Terraform sin necesidad de hacerlo manualmente. Genera  terraform.tfvars
 Su trazabilidad de la ejecucion lo registra en log(log/adapter.log). Ademas los errores los maneja con errores claros y salida controlada.
@@ -677,9 +682,7 @@ chmod +x adapter_parse.sh
 ./adapter_parse.sh
 ```
 
-# **`SPRINT 03`**
-
-## script adapter_validate.py
+### script adapter_validate.py
 Este script lanza el archivo adapter_output.py y recoge su salida. Comprueba si esa salida esta en formato JSON, si es valido y si contiene las claves `status`y `code`. Genera un archivo Markdown `adapter_report.md`, el cual registra un error si hubo fallas y si todo es correco escribe un mensaje de Validacion exitosa con los valores de las claves.
 
 **Ejemplo de ejecución**
@@ -689,4 +692,37 @@ Este script lanza el archivo adapter_output.py y recoge su salida. Comprueba si 
 python3 adapter_validate.py
 ```
 
+## Facade
 
+### `health_check.sh`
+
+Es un script bash que verifica si el proceso `service_dummy.py` está corriendo. Asegura que el servicio verdaderamente se ejecutó y que está activo.
+
+- Usa el comando `pgrep -f service_dummy.py` para buscar dicho proceso.
+- Si está corriendo el servicio, devuelve 0.
+- Si no está corriendo el servicio, devuelve 1.
+- Se ejecuta automáicamente después de `start_service.sh`, en `main.tf`.
+
+### `main.tf`
+
+- Se agrega el recurso `start_service` con la condición:
+```bash
+count = var.adapter_status == "OK" ? 1 : 0
+```
+
+- El recurso solamente se crea si el adapter manda el estado "OK".
+- Se añade también el provisioner para `health_check.sh` después de lanzar el servicio.
+- Si `adapter_status` es distinto de "OK", el servicio no se lanza y no se corre el `health_check.sh`.
+
+### `variables.tf`
+
+- Se agrega las variables `adapter_status`.
+- Estas modificaciones nos permite recibir parámetros generados por Adapter de forma dinámica.
+
+### `run_all.sh` (`scripts/`)
+
+- Ahora, al ejecutar el paso `facade`, se aplica terraform pasando el archivo `.tfvars` que se genera gracias a Adapter:
+```bash
+run_terraform "$STEP" "../adapter/terraform.tfvars"
+```
+- Estas modificaciones nos garantiza el pipeline Adapter -> Facade, sin intervención manual.
