@@ -40,7 +40,8 @@ if [ "$1" == "--step" ]; then
             run_terraform "$STEP" terraform.tfvars
             ;;
         facade)
-            run_terraform "$STEP"
+            # El terraform apply de facade ahora depende de terraform.tfvars generado por adapter
+            run_terraform "$STEP" "../adapter/terraform.tfvars"
             log_message "Se creo la caperta facade_dir con el archivo facade_file.txt" "$STEP"
             ;;
         mediator)
