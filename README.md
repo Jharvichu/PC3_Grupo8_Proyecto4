@@ -621,7 +621,8 @@ python3 generar_dependencies.py
         "null_resource.mediator_read"
     ]
 }
-=======
+```
+
 ## Scripts
 
 ### `run_all.sh`
@@ -726,3 +727,76 @@ count = var.adapter_status == "OK" ? 1 : 0
 run_terraform "$STEP" "../adapter/terraform.tfvars"
 ```
 - Estas modificaciones nos garantiza el pipeline Adapter -> Facade, sin intervención manual.
+
+## `generar_dependencies.py`
+
+El archivo `dependencies.json` se crea automáticamente mediante el script `generar_dependencies.py`, que analiza los archivos `.tf` de los módulos `adapter`, `facade` y `mediator`. El script detecta y organiza las dependencias encontradas, generando el archivo `dependencies.json`. Además, el script también genera un archivo `dependencies.dot` que permite visualizar el grafo de dependencias entre los módulos mediante herramientas compatibles con el formato Graphviz DOT.
+
+#### Pasos para generar `dependencies.json` y `dependencies.dot`:
+
+Para crear ambos archivos, ejecuta el siguiente comando en la raíz del proyecto:
+
+```bash
+python3 generar_dependencies.py
+```
+
+#### Funcionalidades del script
+
+- El script recorre las carpetas de los módulos `adapter`, `facade` y `mediator`.
+- Dentro de cada módulo, busca los archivos `main.tf`.
+- Extrae las dependencias definidas mediante las palabras clave `depends_on`, `module`, `var`, `data`, así como las rutas relativas y recursos declarados con `source` y `terraform_remote_state`.
+- Evita duplicados en la lista de dependencias.
+- Genera el archivo `dependencies.json` con las dependencias de cada módulo.
+- Genera automáticamente un archivo `dependencies.dot` en formato Graphviz DOT para visualizar el grafo de dependencias entre los módulos.
+
+### ¿Cómo generamos la visualización en PNG?
+
+Una vez generado el archivo `dependencies.dot`, puedes crear una imagen PNG del grafo de dependencias usando la herramienta `dot` de Graphviz. Ejecutamos el siguiente comando en la raíz del proyecto:
+
+```bash
+dot -Tpng dependencies.dot -o dependencies.png
+```
+
+Esto generará el archivo `dependencies.png` que muestra gráficamente las relaciones de dependencias entre los módulos.
+
+#### Ejemplo de salida
+
+**dependencies.json**
+```json
+{
+    "adapter": [
+        "adapter_status",
+        "adapter_code",
+        "../shared_module",
+        "terraform_remote_state.shared"
+    ],
+    "facade": [
+        "null_resource.create_folder",
+        "null_resource.create_file",
+        "var.some_input",
+        "../common_utils"
+    ],
+    "mediator": [
+        "null_resource.mediator_read",
+        "data.external.config",
+        "../adapter"
+    ]
+}
+```
+
+**dependencies.dot**
+```dot
+digraph Dependencies {
+    "adapter" -> "adapter_status";
+    "adapter" -> "adapter_code";
+    "adapter" -> "../shared_module";
+    "adapter" -> "terraform_remote_state.shared";
+    "facade" -> "null_resource.create_folder";
+    "facade" -> "null_resource.create_file";
+    "facade" -> "var.some_input";
+    "facade" -> "../common_utils";
+    "mediator" -> "null_resource.mediator_read";
+    "mediator" -> "data.external.config";
+    "mediator" -> "../adapter";
+}
+```
