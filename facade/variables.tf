@@ -9,3 +9,8 @@ variable "facade_file" {
   type        = string
   default     = "facade_file.txt"
 }
+
+variable "adapter_status" {
+  description = "Estado dado por el Adapter"
+  type        = string
+}

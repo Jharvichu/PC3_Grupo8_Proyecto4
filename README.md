@@ -662,3 +662,100 @@ Este script sirve como orquestador general del proyecto, automatizando la ejecuc
 ./run_all.sh --step cliente_a
 ./run_all.sh --step cliente_b
 ```
+
+# **`SPRINT 03`**
+
+## Adapter
+
+### Nuevo adapter_parse.sh
+
+Permite que los valores generados por el adapter se pasen a Terraform sin necesidad de hacerlo manualmente. Genera  terraform.tfvars
+Su trazabilidad de la ejecucion lo registra en log(log/adapter.log). Ademas los errores los maneja con errores claros y salida controlada.
+
+**Ejemplo de ejecución**
+
+```
+# Da permisos si es que no los tuviese
+chmod +x adapter_parse.sh
+
+# Ejecutar el script
+./adapter_parse.sh
+```
+
+### script adapter_validate.py
+Este script lanza el archivo adapter_output.py y recoge su salida. Comprueba si esa salida esta en formato JSON, si es valido y si contiene las claves `status`y `code`. Genera un archivo Markdown `adapter_report.md`, el cual registra un error si hubo fallas y si todo es correco escribe un mensaje de Validacion exitosa con los valores de las claves.
+
+**Ejemplo de ejecución**
+
+```
+# Dentro de adapter ejecutar:
+python3 adapter_validate.py
+```
+
+## Facade
+
+### `health_check.sh`
+
+Es un script bash que verifica si el proceso `service_dummy.py` está corriendo. Asegura que el servicio verdaderamente se ejecutó y que está activo.
+
+- Usa el comando `pgrep -f service_dummy.py` para buscar dicho proceso.
+- Si está corriendo el servicio, devuelve 0.
+- Si no está corriendo el servicio, devuelve 1.
+- Se ejecuta automáicamente después de `start_service.sh`, en `main.tf`.
+
+### `main.tf`
+
+- Se agrega el recurso `start_service` con la condición:
+```bash
+count = var.adapter_status == "OK" ? 1 : 0
+```
+
+- El recurso solamente se crea si el adapter manda el estado "OK".
+- Se añade también el provisioner para `health_check.sh` después de lanzar el servicio.
+- Si `adapter_status` es distinto de "OK", el servicio no se lanza y no se corre el `health_check.sh`.
+
+### `variables.tf`
+
+- Se agrega las variables `adapter_status`.
+- Estas modificaciones nos permite recibir parámetros generados por Adapter de forma dinámica.
+
+### `run_all.sh` (`scripts/`)
+
+- Ahora, al ejecutar el paso `facade`, se aplica terraform pasando el archivo `.tfvars` que se genera gracias a Adapter:
+```bash
+run_terraform "$STEP" "../adapter/terraform.tfvars"
+```
+- Estas modificaciones nos garantiza el pipeline Adapter -> Facade, sin intervención manual.
+
+## Mediator
+
+### `mediator_read.sh`
+
+- Lee el mensaje desde `facade/facade_dir/message_a.txt` (nuevo origen, anteriormente el `message_a.txt` se generaba en el mismo `cliente_a`).
+- Se extrae solamente el campo `msg` usando `jq`, guardándolo temporalmente en `tmp_message.txt`.
+- Todas las operaciones que ocurran son anotadas en logs (`logs/adapter.log`).
+
+### `mediator_forward.sh`
+
+- Llama a `mediator_read.sh` para la obtención del mensaje.
+- Escribe el mensaje plano (el contenido de `msg`) a `message_b.txt` en el directorio `mediator/`.
+- Se agrega logs de las operaciones y se elimina el archiv temporal después de la creación de `message_b.txt`.
+
+### `main.tf`
+
+- Usa `terraform_remote_state` para obtener outputs del módulo facade.
+- Configura las rutas y dependencias para que el Mediator lea desde Facade.
+- Usa `null_resource` y `local-exec` para orquestar la llamada a los scripts Bash.
+
+### Modificaciones adicionales
+
+#### `cliente_a/send_message.sh`
+
+- Ahora genera el archivo `message_a.txt` en la ruta `facade/facade_dir/` en vez de `cliente_a/`.
+- Usa la variable de entorno `CLIENT_A_MSG` para definir el mensaje, con un valor por defecto si es que no se define.
+- Agrega verificación de existencia de la carpeta destino antes de escribir.
+
+#### `cliente_b/receive_message.sh`
+
+- Cambia la ruta de origen del mensaje a `mediator/message_b.txt` y lo copia a `cliente_b/message_b.txt`.
+- Muestra el mensaje recibido al usuario.
