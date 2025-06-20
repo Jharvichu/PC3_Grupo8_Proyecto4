@@ -37,21 +37,24 @@ if [ "$1" == "--step" ]; then
             cd "$BASE_DIR/adapter" || exit 0
             # shellcheck disable=SC1091
             source "adapter_parse.sh"
+            python3 "adapter_validate.py"
             run_terraform "$STEP" terraform.tfvars
             ;;
         facade)
+            "$BASE_DIR/scripts/run_all.sh" --step adapter
             # El terraform apply de facade ahora depende de terraform.tfvars generado por adapter
             run_terraform "$STEP" "../adapter/terraform.tfvars"
+            "$BASE_DIR/facade/health_check.sh"
+            cd "$BASE_DIR" || exit 0
             log_message "Se creo la caperta facade_dir con el archivo facade_file.txt" "$STEP"
             ;;
         mediator)
-            cd "$BASE_DIR/cliente_a" || exit 0
-            # shellcheck disable=SC1091 
-            source "send_message.sh" "Se utilizo run_all.sh"
+            "$BASE_DIR/scripts/run_all.sh" --step cliente_a
             run_terraform "$STEP"
             log_message "Se recepciona el mensaje de A para que B lo reciba" "$STEP"
             ;;
         cliente_a)
+            "$BASE_DIR/scripts/run_all.sh" --step facade
             cd "$BASE_DIR/cliente_a" || exit 0
             # shellcheck disable=SC1091
             source "send_message.sh" "Se utilizo run_all.sh"
@@ -64,6 +67,28 @@ if [ "$1" == "--step" ]; then
             source "receive_message.sh"
             cd "$BASE_DIR" || exit 0
             log_message "El cliente B envio recibio su mensaje" "$STEP"
+            ;;
+        all)
+            cd "$BASE_DIR/adapter" || exit 0
+            # shellcheck disable=SC1091
+            source "adapter_parse.sh"
+            python3 "adapter_validate.py"
+            run_terraform "adapter" terraform.tfvars
+            run_terraform "facade" "../adapter/terraform.tfvars"
+            "$BASE_DIR/facade/health_check.sh"
+            cd "$BASE_DIR/cliente_a" || exit 0
+            # shellcheck disable=SC1091
+            source "send_message.sh" "Se utilizo run_all.sh"
+            run_terraform "mediator"
+            cd "$BASE_DIR/cliente_b" || exit 0
+            # shellcheck disable=SC1091
+            source "receive_message.sh"
+            cd "$BASE_DIR" || exit 0
+            log_message "Se ejecuto todo el proyecto" "$STEP"
+            ;;
+        diagram)
+            python3 generar_dependencies.py
+            dot -Tpng dependencies.dot -o dependencies.png
             ;;
         *)
             echo "Paso desconocido: $STEP"
