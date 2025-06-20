@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# Obteniendo la rama actual
+branch=$(git symbolic-ref --short HEAD)
+
+# Ramas protegidas donde no se permite hacer commits
+ramas_protegidas=("main" "develop" "release")
+
+# Verificar si la rama actual está en la lista de ramas protegidas
+for rama in "${ramas_protegidas[@]}"; do
+  if [[ "$branch" == "$rama" ]]; then
+    echo "ERROR: No está permitido hacer commit directamente en la rama '$branch'."
+    echo "Por favor, cree una rama de trabajo para hacer tus commits."
+    exit 1
+  fi
+done
+
+# Linting ágil, solamente para archivos en área staged
+echo "[pre-commit] Linting ágil..."
+
+# Archivos en staged
+FILES=$(git diff --cached --name-only)
+
+PY_FILES=$(echo "$FILES" | grep -E '\.py$' || true)
+SH_FILES=$(echo "$FILES" | grep -E '\.sh$' || true)
+TF_DIRS=$(echo "$FILES" | grep -E '^.*\.tf$' | xargs -I{} dirname {} | sort -u | uniq || true)
+
+# Flake8, solo errores críticos
+if [[ -n "$PY_FILES" ]]; then
+  flake8 --select=E9,F63,F7,F82 --show-source $PY_FILES
+  if [[ $? -ne 0 ]]; then
+    echo "[pre-commit] Error: flake8 encontró errores críticos."
+    exit 1
+  fi
+fi
+
+# Shellcheck a los scripts bash
+if [[ -n "$SH_FILES" ]]; then
+  for sh in $SH_FILES; do
+    shellcheck "$sh"
+    if [[ $? -ne 0 ]]; then
+      echo "[pre-commit] Error: shellcheck encontró problemas en $sh."
+      exit 1
+    fi
+  done
+fi
+
+# TFLint solo sintaxis, usando configuracion .tflint.hcl
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+for dir in $TF_DIRS; do
+  if [ -d "$dir" ]; then
+    tflint --config="$REPO_ROOT/.tflint.hcl" --chdir="$dir"
+    if [[ $? -ne 0 ]]; then
+      echo "[pre-commit] Error: tflint encontró problemas en $dir."
+      exit 1
+    fi
+  fi
+done
+
+exit 0
